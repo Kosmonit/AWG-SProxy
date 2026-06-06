@@ -34,16 +34,25 @@ AWG-SProxy uses [amneziawg-go](https://github.com/amnezia-vpn/amneziawg-go) **ne
 ## Requirements
 
 - **Go 1.24+** (to build from source)
+- **Windows** (for the pre-built release zip)
 - A working **AmneziaWG / Cloudflare WARP** config file
 - A reachable **Peer Endpoint** (IP:port)
 
+*(Building from source also requires Go 1.24+ — see [Build from source](#build-from-source).)*
+
 ---
 
-## Quick start
+## Download (release)
 
-### 1. Get the config
+Go to **[Releases](https://github.com/moein8668-git/awg-sproxy/releases)** and download:
 
-Copy the example and add your real keys:
+```text
+AWG-SProxy-v1.0.0-windows-amd64.zip
+```
+
+Unzip anywhere, then:
+
+### 1. Create your config
 
 ```bat
 copy config.conf.example config.conf
@@ -51,30 +60,14 @@ copy config.conf.example config.conf
 
 Edit `config.conf` with your `PrivateKey`, `Address`, AWG noise params, and `Endpoint`.
 
-### 2. Build
+> **Never share `config.conf`** — it contains your private key.
 
-**Windows:**
+### 2. Run
 
-```bat
-build.bat
-```
-
-**Any OS:**
-
-```bash
-go build -o awg-sproxy .
-```
-
-### 3. Run
+Double-click `run.bat`, or from a terminal:
 
 ```bat
 awg-sproxy.exe
-```
-
-Or on Windows with the helper script (checks that `config.conf` exists):
-
-```bat
-run.bat
 ```
 
 Expected output:
@@ -89,6 +82,38 @@ AWG-SProxy started
 ```
 
 Stop with `Ctrl+C`.
+
+### What's inside the release zip
+
+| File | Purpose |
+|------|---------|
+| `awg-sproxy.exe` | The proxy program |
+| `config.conf.example` | Config template — copy to `config.conf` |
+| `run.bat` | Quick launcher (checks config exists) |
+| `README.md` | This guide |
+| `LICENSE` | MIT license |
+
+No install wizard, no admin rights, no extra dependencies.
+
+---
+
+## Build from source
+
+For developers or non-Windows builds. Clone the repo, then:
+
+**Windows:**
+
+```bat
+build.bat
+```
+
+**Any OS:**
+
+```bash
+go build -o awg-sproxy .
+```
+
+Then follow the [release quick start](#1-create-your-config) above (`config.conf` + `awg-sproxy.exe`).
 
 ---
 
@@ -201,13 +226,41 @@ awg-sproxy/
 
 ---
 
-## Smoke test (optional)
+## Smoke test (optional, source repo only)
 
-With AWG-SProxy running and a working endpoint:
+If you cloned the full repo and have Python installed, with AWG-SProxy running:
 
 ```bat
 python scripts\test_proxy.py
 ```
+
+This is **not** included in the release zip.
+
+---
+
+## Publishing a release (maintainers)
+
+1. Build the binary: `build.bat`
+2. Pack the zip: `pack_release.bat v1.0.0`
+3. On GitHub → **Releases** → **Draft a new release**
+4. Tag e.g. `v1.0.0`, upload `release\AWG-SProxy-v1.0.0-windows-amd64.zip`
+5. Paste release notes (what changed, proxy ports, config reminder)
+
+**Only these 5 files go in the zip** — nothing else:
+
+```text
+awg-sproxy.exe
+config.conf.example
+run.bat
+README.md
+LICENSE
+```
+
+**Do not put in the zip:**
+
+- `config.conf` (private keys)
+- Source code (`.go` files) — users get that from the repo / GitHub auto source zip
+- `build.bat`, `go.mod`, `scripts/`, test files
 
 ---
 

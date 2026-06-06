@@ -33,7 +33,6 @@ AWG-SProxy uses [amneziawg-go](https://github.com/amnezia-vpn/amneziawg-go) **ne
 
 ## Requirements
 
-- **Go 1.24+** (to build from source)
 - **Windows** (for the pre-built release zip)
 - A working **AmneziaWG / Cloudflare WARP** config file
 - A reachable **Peer Endpoint** (IP:port)

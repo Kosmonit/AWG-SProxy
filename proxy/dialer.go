@@ -4,7 +4,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/amnezia-vpn/amneziawg-go/tun/netstack"
+	"github.com/amnezia-vpn/amneziawg-go/v3/tun/netstack"
 )
 
 // TunnelDialer routes TCP connections through the AmneziaWG netstack.

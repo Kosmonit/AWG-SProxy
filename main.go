@@ -16,7 +16,7 @@ const appName = "AWG-SProxy"
 
 func main() {
 	configPath := flag.String("config", "config.conf", "AmneziaWG config file path")
-	endpointOverride := flag.String("endpoint", "", "override Peer Endpoint from config (e.g. 8.6.112.208:7281)")
+	endpointOverride := flag.String("endpoint", "", "override Peer Endpoint from config (e.g. vpn.example.net:51820)")
 	socksPort := flag.Int("socks", 8600, "SOCKS5 proxy listen port (0 to disable)")
 	httpPort := flag.Int("http", 8601, "HTTP proxy listen port (0 to disable)")
 	bindAddr := flag.String("bind", "127.0.0.1", "Address to bind proxy listeners")

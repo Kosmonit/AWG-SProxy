@@ -1,8 +1,25 @@
 # AWG-SProxy
 
-A lightweight **AmneziaWG proxy** that runs entirely in userspace. Route only the apps you choose through Cloudflare WARP / AmneziaWG — without installing a system-wide VPN tunnel.
+A lightweight **AmneziaWG 2.0 / 3.1 proxy client** that runs entirely in
+userspace. It routes only applications configured to use its SOCKS5 or HTTP
+proxy through AmneziaWG, without creating a system-wide VPN interface.
 
-> **Note:** This project was **vibe-coded** with AI assistance (Cursor). I did not write the code myself — I designed the idea and iterated on it with AI. Use at your own discretion, review the code if you care about security, and report issues if something breaks.
+## Fork status and disclaimer
+
+This repository is a fork of the original AWG-SProxy project. The fork adds
+and verifies support for:
+
+- AmneziaWG 2.0 configurations;
+- AmneziaWG 3.1 configurations;
+- the official `github.com/amnezia-vpn/amneziawg-go/v3` backend;
+- preshared keys, AWG 3.1 parameters, range keepalives, stricter validation,
+  and regression tests.
+
+> **No warranty:** the changes in this fork are the result of vibe coding with
+> AI assistance. They have been reviewed and tested against the current
+> backend, but may still contain defects, including security or compatibility
+> issues. Review the source before relying on it. Use it entirely at your own
+> risk. The MIT license provides the software **“AS IS”**, without warranty.
 
 ---
 
@@ -15,7 +32,11 @@ A lightweight **AmneziaWG proxy** that runs entirely in userspace. Route only th
 | Needs admin / driver install | Runs as a normal user |
 | Kill-switch can block other traffic | Rest of the system untouched |
 
-AWG-SProxy uses [amneziawg-go](https://github.com/amnezia-vpn/amneziawg-go) **netstack** (gVisor userspace network stack). Traffic from the proxy listeners goes through the encrypted AWG tunnel; everything else uses your normal connection.
+AWG-SProxy uses the official
+[amneziawg-go/v3](https://github.com/amnezia-vpn/amneziawg-go) implementation
+and its gVisor userspace netstack. Traffic from the proxy listeners goes
+through the encrypted AWG tunnel; everything else uses the normal system
+connection.
 
 ---
 
@@ -23,43 +44,51 @@ AWG-SProxy uses [amneziawg-go](https://github.com/amnezia-vpn/amneziawg-go) **ne
 
 - **SOCKS5** proxy (default port `8600`) — primary, recommended
 - **HTTP CONNECT** proxy (default port `8601`)
-- Reads standard AmneziaWG / WARP `config.conf` (Interface + Peer)
+- Reads native AmneziaWG / WireGuard-style `.conf` files
+- Supports one `[Interface]` and exactly one `[Peer]`
+- Supports **AWG 2.0**: `Jc`, `Jmin`, `Jmax`, `S1`–`S4`, `H1`–`H4`,
+  and `I1`–`I5`
+- Supports **AWG 3.1**: `HeaderProtectionKey`, `ContentPaddingAddition`,
+  timing ranges, `RandomTrailers`, and `DisableCookies`
+- Supports `PresharedKey` and numeric/range `PersistentKeepalive`
 - DNS resolved through the tunnel using the DNS servers from your config (same logic as the main AmneziaWG client)
-- Supports AWG obfuscation parameters (`Jc`, `Jmin`, `Jmax`, `H1`–`H4`, `I1`, etc.)
+- Strict validation prevents unknown wire-format parameters from being silently ignored
 - Binds to `127.0.0.1` by default — not exposed to your LAN
 - Optional endpoint override without editing the config file
+- No TUN/TAP interface, routing table changes, or root/administrator privileges
 
 ---
 
 ## Requirements
 
-- **Windows** (for the pre-built release zip)
+- **Linux or Windows**
 - A working **AmneziaWG / Cloudflare WARP** config file
-- A reachable **Peer Endpoint** (IP:port)
+- A reachable **Peer Endpoint** (`IPv4:port`, `[IPv6]:port`, or hostname)
 
-*(Building from source also requires Go 1.24+ — see [Build from source](#build-from-source).)*
+Building from source requires **Go 1.25+**.
 
 ---
 
-## Download (release)
-
-Go to **[Releases](https://github.com/moein8668-git/awg-sproxy/releases)** and download:
-
-```text
-AWG-SProxy-v1.0.0-windows-amd64.zip
-```
-
-Unzip anywhere, then:
+## Quick start
 
 ### 1. Create your config
 
+Choose the template matching your server:
+
 ```bat
-copy config.conf.example config.conf
+REM AmneziaWG 2.0
+copy config.awg20.conf.example config.conf
+
+REM AmneziaWG 3.1
+copy config.awg31.conf.example config.conf
 ```
 
-Edit `config.conf` with your `PrivateKey`, `Address`, AWG noise params, and `Endpoint`.
+Edit `config.conf` with your keys, address, peer endpoint, allowed IPs, and the
+exact AWG parameters supplied by your VPN provider.
 
-> **Never share `config.conf`** — it contains your private key.
+> **Never commit or share a real `.conf` file.** It normally contains
+> `PrivateKey`, may contain `PresharedKey`, and AWG 3.1 contains
+> `HeaderProtectionKey`.
 
 ### 2. Run
 
@@ -73,7 +102,7 @@ Expected output:
 
 ```text
 AWG-SProxy started
-  endpoint: 188.114.97.6:7281
+  endpoint: vpn.example.net:51820
   dns:      1.1.1.1, 1.0.0.1, ...
   tunnel:   userspace netstack (no system interface)
   socks5:   127.0.0.1:8600
@@ -82,23 +111,9 @@ AWG-SProxy started
 
 Stop with `Ctrl+C`.
 
-### What's inside the release zip
-
-| File | Purpose |
-|------|---------|
-| `awg-sproxy.exe` | The proxy program |
-| `config.conf.example` | Config template — copy to `config.conf` |
-| `run.bat` | Quick launcher (checks config exists) |
-| `README.md` | This guide |
-| `LICENSE` | MIT license |
-
-No install wizard, no admin rights, no extra dependencies.
-
----
-
 ## Build from source
 
-For developers or non-Windows builds. Clone the repo, then:
+Clone your fork/repository and run one of the following commands.
 
 **Windows:**
 
@@ -106,13 +121,20 @@ For developers or non-Windows builds. Clone the repo, then:
 build.bat
 ```
 
-**Any OS:**
+**Linux:**
 
 ```bash
 go build -o awg-sproxy .
 ```
 
-Then follow the [release quick start](#1-create-your-config) above (`config.conf` + `awg-sproxy.exe`).
+**Cross-compile Windows x64 from Linux:**
+
+```bash
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o awg-sproxy.exe .
+```
+
+The generated executable is self-contained. Go is not required on the target
+machine.
 
 ---
 
@@ -121,7 +143,7 @@ Then follow the [release quick start](#1-create-your-config) above (`config.conf
 | Flag | Default | Description |
 |------|---------|-------------|
 | `-config` | `config.conf` | Path to AmneziaWG config |
-| `-endpoint` | *(from config)* | Override peer endpoint, e.g. `188.114.97.6:7281` |
+| `-endpoint` | *(from config)* | Override peer endpoint, e.g. `vpn.example.net:51820` |
 | `-socks` | `8600` | SOCKS5 listen port (`0` = disable) |
 | `-http` | `8601` | HTTP proxy listen port (`0` = disable) |
 | `-bind` | `127.0.0.1` | Bind address for proxy listeners |
@@ -130,13 +152,13 @@ Then follow the [release quick start](#1-create-your-config) above (`config.conf
 
 ```bat
 REM Custom ports
-awg-sproxy.exe -config config.conf --socks 9000 --http 9001
+awg-sproxy.exe -config config.conf -socks 9000 -http 9001
 
 REM SOCKS5 only
-awg-sproxy.exe -config config.conf --http 0
+awg-sproxy.exe -config config.conf -http 0
 
 REM Try a different endpoint without editing config
-awg-sproxy.exe -config config.conf -endpoint 8.6.112.208:7281
+awg-sproxy.exe -config config.conf -endpoint vpn.example.net:51820
 ```
 
 ---
@@ -177,29 +199,87 @@ Only tabs/apps using the proxy go through WARP. Everything else stays on your no
 
 ## Config file format
 
-Standard AmneziaWG / WireGuard INI format:
+The parser accepts AmneziaWG / WireGuard-style INI syntax. Section names and
+parameter names are case-insensitive, whitespace around `=` is ignored, and
+full-line or trailing `#` / `;` comments are supported.
 
 ```ini
 [Interface]
-PrivateKey = ...
-Address = 172.16.0.2/32, 2606:4700:110:.../128
-DNS = 1.1.1.1, 1.0.0.1, 2606:4700:4700::1111, 2606:4700:4700::1001
+PrivateKey = <base64 32-byte private key>
+Address = 10.8.0.2/32
+DNS = 1.1.1.1, 1.0.0.1
 MTU = 1280
-Jc = 3
-Jmin = 1
-Jmax = 3
+
+# AWG 2.0 parameters
+Jc = 4
+Jmin = 10
+Jmax = 50
+S1 = 12
+S2 = 12
+S3 = 12
+S4 = 12
 H1 = 1
 H2 = 2
 H3 = 3
 H4 = 4
+I1 = <r 2><b 0x0102><d>
+
+# AWG 3.1 parameters, only when supplied by the provider
+HeaderProtectionKey = <base64 32-byte header protection key>
+ContentPaddingAddition = 16-32
+RekeyAfterTime = 100-120
+RekeyTimeout = 3-7
+RejectAfterTime = 150-180
+KeepaliveTimeout = 5-15
+MaxHandshakeAttempts = 15-20
+RandomTrailers = on
+DisableCookies = on
 
 [Peer]
-PublicKey = bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo=
+PublicKey = <base64 32-byte public key>
+PresharedKey = <optional base64 32-byte preshared key>
 AllowedIPs = 0.0.0.0/0, ::/0
-Endpoint = 188.114.97.6:7281
+Endpoint = vpn.example.net:51820
+PersistentKeepalive = 25-35
 ```
 
-See `config.conf.example` for a template.
+Copy every AWG parameter exactly from a known-working provider configuration.
+Do not invent values.
+
+### Supported formats
+
+| Parameter | Accepted `.conf` format | Backend UAPI |
+|---|---|---|
+| Private/Public/Preshared key | Base64, exactly 32 decoded bytes | lowercase hex |
+| `HeaderProtectionKey` | Base64, exactly 32 decoded bytes | `header_protection_key=<64 hex chars>` |
+| `Jc`, `Jmin`, `Jmax` | decimal uint32 | unchanged |
+| `S1`–`S4` | decimal uint16 | unchanged |
+| `H1`–`H4` | number or `min-max` | unchanged |
+| `I1`–`I5` | AWG obfuscation specification | unchanged |
+| AWG 3.1 timing/padding values | number or `min-max` | unchanged |
+| `RandomTrailers`, `DisableCookies` | `on/off`, `true/false`, or `1/0` | `1/0` |
+| `PersistentKeepalive` | number or `min-max` | unchanged |
+
+`HeaderProtectionKey` requires all `S1`–`S4` values to be at least 12, as
+required by the current backend. `H1`–`H4` ranges must not overlap.
+
+### Strict behavior and limitations
+
+- `PrivateKey`, `Address`, `PublicKey`, `Endpoint`, and `AllowedIPs` are required.
+- Exactly one `[Interface]` and one `[Peer]` are supported.
+- Unknown or duplicate parameters produce an error instead of being ignored.
+- Invalid keys, booleans, numeric values, ranges, endpoints, and CIDRs are
+  rejected before the tunnel starts.
+- `PersistentKeepalive` is not invented when absent.
+- Hostname endpoints are resolved once when the client starts.
+- `FwMark`, `Table`, `PreUp`, `PostUp`, `PreDown`, `PostDown`, and
+  `SaveConfig` are intentionally unsupported by this userspace proxy.
+
+Templates:
+
+- `config.awg20.conf.example` — complete AWG 2.0 example;
+- `config.awg31.conf.example` — complete AWG 3.1 example;
+- `config.awg20-min.conf.example` — minimal AWG 2.0 template.
 
 ---
 
@@ -208,16 +288,20 @@ See `config.conf.example` for a template.
 ```text
 awg-sproxy/
 ├── main.go              # Entry point, CLI, lifecycle
-├── config.go            # Config parser
-├── tunnel.go            # AWG netstack tunnel setup
+├── config.go            # Strict config parser and validation
+├── tunnel.go            # AWG netstack and UAPI configuration
+├── config_test.go       # AWG 2.0 / 3.1 regression tests
 ├── proxy/
 │   ├── socks5.go        # SOCKS5 server
 │   ├── http.go          # HTTP CONNECT proxy
 │   ├── dialer.go        # Tunnel dialer
 │   └── relay.go         # Connection relay
 ├── scripts/
+│   ├── decode_awg_lnk.py
 │   └── test_proxy.py    # Optional local smoke test
-├── config.conf.example  # Template (safe to commit)
+├── config.awg20-min.conf.example # Minimal AWG 2.0 template
+├── config.awg20.conf.example  # AWG 2.0 template
+├── config.awg31.conf.example  # AWG 3.1 template
 ├── build.bat            # Windows build script
 ├── run.bat              # Windows run helper
 └── README.md
@@ -233,33 +317,16 @@ If you cloned the full repo and have Python installed, with AWG-SProxy running:
 python scripts\test_proxy.py
 ```
 
-This is **not** included in the release zip.
+Run the Go regression suite without a VPN server:
 
----
-
-## Publishing a release (maintainers)
-
-1. Build the binary: `build.bat`
-2. Pack the zip: `pack_release.bat v1.0.0`
-3. On GitHub → **Releases** → **Draft a new release**
-4. Tag e.g. `v1.0.0`, upload `release\AWG-SProxy-v1.0.0-windows-amd64.zip`
-5. Paste release notes (what changed, proxy ports, config reminder)
-
-**Only these 5 files go in the zip** — nothing else:
-
-```text
-awg-sproxy.exe
-config.conf.example
-run.bat
-README.md
-LICENSE
+```bash
+go test ./...
+go vet ./...
+go build
 ```
 
-**Do not put in the zip:**
-
-- `config.conf` (private keys)
-- Source code (`.go` files) — users get that from the repo / GitHub auto source zip
-- `build.bat`, `go.mod`, `scripts/`, test files
+The tests validate generated UAPI through the real `amneziawg-go/v3`
+`IpcSet`/`IpcGet` parser without contacting a VPN server.
 
 ---
 
@@ -274,13 +341,24 @@ netstat -ano | findstr ":8600"
 taskkill /PID <pid> /F
 ```
 
-Or use different ports: `awg-sproxy.exe --socks 8610 --http 8611`
+Or use different ports: `awg-sproxy.exe -socks 8610 -http 8611`
 
 ### Proxy starts but connections fail
 
 - Check that `Endpoint` in your config is reachable from your network.
 - Try `-endpoint` with a known-good IP:port.
-- Confirm AWG noise params (`Jc`, `H1`, etc.) match your working config exactly.
+- Confirm every AWG 2.0/3.1 parameter matches a known-working config exactly.
+- Compare the startup AWG UAPI diagnostics. Private keys and PSK are never
+  printed; only the first 8 hex characters and length of
+  `header_protection_key` are shown.
+
+### Configuration is rejected
+
+- Unknown parameters are rejected intentionally to prevent silent wire-format
+  mismatches.
+- A configuration with multiple `[Peer]` sections is not supported.
+- With `HeaderProtectionKey`, all `S1`–`S4` values must be at least 12.
+- `H1`–`H4` ranges must not overlap.
 
 ### SOCKS5 handshake works but sites time out
 
@@ -304,7 +382,7 @@ Or use different ports: `awg-sproxy.exe --socks 8610 --http 8611`
   AmneziaWG device (userspace, encrypted)
         │
         ▼
-  WARP peer endpoint
+  AmneziaWG peer endpoint
 ```
 
 No Wintun. No routing table changes. No kill-switch.
@@ -313,11 +391,15 @@ No Wintun. No routing table changes. No kill-switch.
 
 ## Credits
 
-- [amneziawg-go](https://github.com/amnezia-vpn/amneziawg-go) — AmneziaWG userspace implementation
+- Forked from [moein8668-git/awg-sproxy](https://github.com/moein8668-git/awg-sproxy)
+- [amneziawg-go/v3](https://github.com/amnezia-vpn/amneziawg-go) — official AmneziaWG userspace implementation
 - Inspired by [wireproxy-awg](https://github.com/artem-russkikh/wireproxy-awg) and similar netstack proxy tools
+- AWG 2.0/3.1 compatibility fixes, validation, and tests were developed with
+  AI-assisted vibe coding; see the disclaimer at the top of this document
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). The original copyright and permission notice are
+retained, and fork modifications are distributed under the same license.

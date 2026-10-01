@@ -1,0 +1,23 @@
+# Minimal AmneziaWG 2.0 example.
+# Copy this file to config.conf and replace all example values.
+
+[Interface]
+PrivateKey = YOUR_BASE64_PRIVATE_KEY_HERE
+Address = 10.8.0.2/32, fd00::2/128
+DNS = 1.1.1.1, 1.0.0.1
+MTU = 1280
+
+# AmneziaWG 2.0 obfuscation parameters.
+# Copy the exact values from your working provider configuration.
+Jc = 3
+Jmin = 1
+Jmax = 3
+H1 = 1
+H2 = 2
+H3 = 3
+H4 = 4
+
+[Peer]
+PublicKey = YOUR_BASE64_PEER_PUBLIC_KEY_HERE
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = vpn.example.net:51820

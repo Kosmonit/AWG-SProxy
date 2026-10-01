@@ -1,0 +1,42 @@
+# Local / production configs
+config.conf
+*.conf
+!*.conf.example
+!config.*.conf.example
+
+# Build artifacts
+#awg-sproxy
+#awg-sproxy.exe
+*.exe
+!awg-sproxy.exe
+/dist/
+/bin/
+
+# Secrets & env
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Logs / dumps / decoded VPN links
+*.log
+*.lnk
+decoded*.txt
+*.decoded
+
+# Local notes
+#notes.md
+
+# IDE / OS
+.idea/
+.vscode/
+*.code-workspace
+.DS_Store
+Thumbs.db
+
+# Go
+*.test
+coverage.out

@@ -1,0 +1,45 @@
+# AmneziaWG 3.1 example.
+# Replace every placeholder and copy all AWG parameters exactly from the
+# configuration supplied by your VPN provider.
+
+[Interface]
+PrivateKey = YOUR_BASE64_PRIVATE_KEY_HERE
+Address = 10.8.0.2/32
+DNS = 1.1.1.1, 1.0.0.1
+MTU = 1280
+# ListenPort = 51820
+
+# AWG 2.0-compatible obfuscation parameters used by AWG 3.1
+Jc = 4
+Jmin = 10
+Jmax = 50
+S1 = 12
+S2 = 12
+S3 = 12
+S4 = 12
+H1 = 1
+H2 = 2
+H3 = 3
+H4 = 4
+
+# I1-I5 are optional provider-specific obfuscation specifications.
+I1 = <r 2><b 0x0102><d>
+
+# AWG 3.1 parameters
+# HeaderProtectionKey is Base64 and must decode to exactly 32 bytes.
+HeaderProtectionKey = YOUR_BASE64_HEADER_PROTECTION_KEY_HERE
+ContentPaddingAddition = 16-32
+RekeyAfterTime = 100-120
+RekeyTimeout = 3-7
+RejectAfterTime = 150-180
+KeepaliveTimeout = 5-15
+MaxHandshakeAttempts = 15-20
+RandomTrailers = on
+DisableCookies = on
+
+[Peer]
+PublicKey = YOUR_BASE64_PEER_PUBLIC_KEY_HERE
+# PresharedKey = YOUR_BASE64_PRESHARED_KEY_HERE
+AllowedIPs = 0.0.0.0/0, ::/0
+Endpoint = vpn.example.net:51820
+PersistentKeepalive = 25-35
